@@ -1,0 +1,192 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+SETUP THE ENVIRONMENT
+
+```{r DIRS}
+## CLEAN
+rm(list = ls())
+
+## LIBRARIES
+source("/Users/genzorp/Documents/GITHUB/rlibs/r/LibrariesR.R")
+LibrariesR()
+
+## DIRS
+FIG.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/results/figures/"
+TAB.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/results/tables/"
+
+## SETTINGS
+FAM = "Helvetica"
+XYT = 12
+TCOL = "black"
+```
+
+```{r MOUSE: Select data}
+## LOAD MOUSE DATA
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/Zamore_031220_1850loaded.RData")
+
+## DATA
+names(ZAMORE.BAM.L)
+barplot(table(width(ZAMORE.BAM.L[[1]])))
+
+## SAMPLE NAMES
+MILI.PS.IDS <- c(MILI_PS_1="SRR7760331",MILI_PS_2="SRR7760329")
+MILI.PS.KO.IDS <- c(MILI_PS_KO_1="SRR7760338",MILI_PS__KO_2="SRR7760365")
+MIWI.PS.IDS <- c(MIWI_PS_1="SRR7760307",MIWI_PS_2="SRR7760314")
+MIWI.PS.KO.IDS <- c(MIWI_PS_KO_1="SRR7760335",MIWI_PS_KO_2="SRR7760333")
+
+## SUBSET INTO A GRL
+MILI.PS.GRL <- ZAMORE.BAM.L[names(ZAMORE.BAM.L) %in% MILI.PS.IDS]
+names(MILI.PS.GRL) <- names(MILI.PS.IDS)
+
+MILI.PS.KO.GRL <- ZAMORE.BAM.L[names(ZAMORE.BAM.L) %in% MILI.PS.KO.IDS]
+names(MILI.PS.KO.GRL) <- names(MILI.PS.KO.IDS)
+
+MIWI.PS.GRL <- ZAMORE.BAM.L[names(ZAMORE.BAM.L) %in% MIWI.PS.IDS]
+names(MIWI.PS.GRL) <- names(MIWI.PS.IDS)
+
+MIWI.PS.KO.GRL <- ZAMORE.BAM.L[names(ZAMORE.BAM.L) %in% MIWI.PS.KO.IDS]
+names(MIWI.PS.KO.GRL) <- names(MIWI.PS.KO.IDS)
+
+##
+## REMOVE THE REST
+##
+
+rm(ZAMORE.BAM.L)
+
+##
+## SAVE OBJECT
+##
+
+save.image("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/Zamore_050420_1850loaded_subset.RData")
+```
+
+```{r MOUSE: Perform Overlaps & Combine}
+## DATA
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/Zamore_050420_1850loaded_subset.RData")
+
+MILI.PS.GRL
+MILI.PS.KO.GRL
+MIWI.PS.GRL
+MIWI.PS.KO.GRL
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/twoSampleSequenceOverlaps.R")
+
+
+##
+## OVERLAPS
+##
+
+MILI.PS.OV.L <- twoSampleSequenceOverlaps(GRL = MILI.PS.GRL, 
+                                          BSSPECIES = "Mmusculus", 
+                                          MC.CORES = 1)
+
+MILI.PS.KO.OV.L <- twoSampleSequenceOverlaps(GRL = MILI.PS.KO.GRL,
+                                             BSSPECIES = "Mmusculus", 
+                                             MC.CORES = 1)
+
+MIWI.PS.OV.L <- twoSampleSequenceOverlaps(GRL = MIWI.PS.GRL, 
+                                          BSSPECIES = "Mmusculus", 
+                                          MC.CORES = 1)
+
+MIWI.PS.KO.OV.L <- twoSampleSequenceOverlaps(GRL = MIWI.PS.KO.GRL, 
+                                             BSSPECIES = "Mmusculus", 
+                                             MC.CORES = 1)
+
+##
+## COMBINATIONS
+##
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/combineTwoGRS.R")
+
+##
+## MILI PS
+##
+
+MILI.PS.TOTAL <- combineTwoGRS(GRL = MILI.PS.GRL, 
+                                DUPLICATE.NAMES = names(MILI.PS.GRL), MC.CORES = 1)
+
+MILI.PS.COMMON <- combineTwoGRS(GRL = MILI.PS.OV.L[["Common"]], 
+                                DUPLICATE.NAMES = names(MILI.PS.OV.L[["Common"]]), MC.CORES = 1)
+
+MILI.PS.EXCLUSIVE <- combineTwoGRS(GRL = MILI.PS.OV.L[["Exclusive"]], 
+                                DUPLICATE.NAMES = names(MILI.PS.OV.L[["Exclusive"]]), MC.CORES = 1)
+
+##
+## MILI PS KO
+##
+
+MILI.PS.KO.TOTAL <- combineTwoGRS(GRL = MILI.PS.KO.GRL, 
+                                  DUPLICATE.NAMES = names(MILI.PS.KO.GRL), MC.CORES = 1)
+
+MILI.PS.KO.COMMON <- combineTwoGRS(GRL = MILI.PS.KO.OV.L[["Common"]], 
+                                   DUPLICATE.NAMES = names(MILI.PS.KO.OV.L[["Common"]]), MC.CORES = 1)
+
+MILI.PS.KO.EXCLUSIVE <- combineTwoGRS(GRL = MILI.PS.KO.OV.L[["Exclusive"]], 
+                                      DUPLICATE.NAMES = names(MILI.PS.KO.OV.L[["Exclusive"]]), MC.CORES = 1)
+##
+## MIWI PS
+##
+
+MIWI.PS.TOTAL <- combineTwoGRS(GRL = MIWI.PS.GRL, 
+                                DUPLICATE.NAMES = names(MIWI.PS.GRL), MC.CORES = 1)
+
+MIWI.PS.COMMON <- combineTwoGRS(GRL = MIWI.PS.OV.L[["Common"]], 
+                                DUPLICATE.NAMES = names(MIWI.PS.OV.L[["Common"]]), MC.CORES = 1)
+
+MIWI.PS.EXCLUSIVE <- combineTwoGRS(GRL = MIWI.PS.OV.L[["Exclusive"]], 
+                                DUPLICATE.NAMES = names(MIWI.PS.OV.L[["Exclusive"]]), MC.CORES = 1)
+
+##
+## MIWI PS KO
+##
+
+MIWI.PS.KO.TOTAL <- combineTwoGRS(GRL = MIWI.PS.KO.GRL, 
+                                  DUPLICATE.NAMES = names(MIWI.PS.KO.GRL), MC.CORES = 1)
+
+MIWI.PS.KO.COMMON <- combineTwoGRS(GRL = MIWI.PS.KO.OV.L[["Common"]], 
+                                   DUPLICATE.NAMES = names(MIWI.PS.KO.OV.L[["Common"]]), MC.CORES = 1)
+
+MIWI.PS.KO.EXCLUSIVE <- combineTwoGRS(GRL = MIWI.PS.KO.OV.L[["Exclusive"]],
+                                      DUPLICATE.NAMES = names(MIWI.PS.KO.OV.L[["Exclusive"]]), MC.CORES = 1)
+
+save.image("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/Zamore_050420_1850loaded_subsetOverlapTotalsCombined.RData")
+```
+
+```{r MOUSE: Cleanup and Save}
+## NEW LIST
+F2.MOUSEDATA <- list("MILI.WT"=list("PSIMili-total" = MILI.PS.TOTAL,
+                                    "PSIMili-common" = MILI.PS.COMMON,
+                                    "PSIMili-exclusive" = MILI.PS.EXCLUSIVE),
+                     "MILI.KO"=list("PSIMiliKO-total" = MILI.PS.KO.TOTAL,
+                                    "PSIMiliKO-common" = MILI.PS.KO.COMMON,
+                                    "PSIMiliKO-exclusive" = MILI.PS.KO.EXCLUSIVE),
+                     "MIWI.WT"=list("PSIMiwi-total" =  MIWI.PS.TOTAL,
+                                    "PSIMiwi-common" = MIWI.PS.COMMON, 
+                                    "PSIMiwi-exclusive" = MIWI.PS.EXCLUSIVE),
+                     "MIWI.KO"=list("PSIMiwiKO-total" = MIWI.PS.KO.TOTAL,
+                                    "PSIMiwiKO-common" = MIWI.PS.KO.COMMON,
+                                    "PSIMiwiKO-exclusive" = MIWI.PS.KO.EXCLUSIVE),
+                     "ORIGINAL.DATA" = list("MILI.PS.GRL" = MILI.PS.GRL,
+                                            "MILI.PS.KO.GRL" = MILI.PS.KO.GRL,
+                                            "MIWI.PS.GRL" = MIWI.PS.GRL,
+                                            "MIWI.PS.KO.GRL" = MIWI.PS.KO.GRL))
+
+rm(list = c(grep("MILI",ls(),value = TRUE),grep("MIWI",ls(),value = TRUE)))
+
+## SAVE FINAL DATA
+save.image("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/F2_MOUSEDATA.RData")
+
+```
+
+
+
+
+
+
+
+
