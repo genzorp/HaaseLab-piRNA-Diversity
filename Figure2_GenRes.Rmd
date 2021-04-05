@@ -1,0 +1,991 @@
+---
+title: "Figure 2"
+output: html_document
+---
+
+General Settings
+```{r SETUP} 
+## CLEAN
+rm(list = ls())
+
+## LIBRARIES: ... fix
+source("/Users/genzorp/Documents/GITHUB/rlibs/r/LibrariesR.R")
+LibrariesR()
+
+## DIRS
+FIG.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/results/figures/"
+TAB.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/results/tables/"
+
+## SETTINGS
+FAM = "Helvetica"; XYT = 12; TCOL = "black"
+```
+
+Fig. 2 Load Data
+```{r OSC: FHIP Load Data}
+## PRE-PROCESSED DATA
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/F3_ALLDATA.RData")
+```
+
+Fig. 2 Main - Steps and bars 
+```{r OSC: FHIP Steps with Bar}
+## DATA
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/Haase_S1832_9T3Bloaded.RData")
+
+## BIOLOGICAL REPLICATE INFORMATION
+HAASE.S1832.BREPS.L
+lapply(HAASE.S1832.BREPS.L, length)
+lapply(HAASE.S1832.BREPS.L, function(s){sum(mcols(s)[["MULT"]])})
+
+## FUNCTIONS
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleStepsPlot.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMultBarPlot.R")
+
+## FILTER
+OSC.S249.BREPS <- lapply(HAASE.S1832.BREPS.L, function(s){
+  simpleGRFilter(GR = s, SIZE.RANGE = c(24,29))})
+names(OSC.S249.BREPS)
+
+## Sequences from 24 - 29 nt: 6,100,672
+length(HAASE.S1832.BREPS.L[[1]][width(HAASE.S1832.BREPS.L[[1]]) %in% seq(24,29)])
+## Reads from 24 - 29 nt: 66,864,238
+sum(mcols(HAASE.S1832.BREPS.L[[1]][width(HAASE.S1832.BREPS.L[[1]]) %in% seq(24,29)])[["MULT"]])
+
+## Plot Steps
+OSC.SGG <- simpleStepsPlot(GRL = OSC.S249.BREPS, 
+                           Y.LIMS = c(0.01,2e3), 
+                           Y.PPM = TRUE, 
+                           RETURN.ALL = TRUE)
+OSC.SGG
+
+## Save Steps Plots
+#ggsave(filename = paste0(FIG.DIR,"F2A_NAT_PPM.pdf"), plot = OSC.SGG, height = 8, width = 6)
+
+
+OSC.ALL.STEP <- simpleStepsPlot(GRL = OSC.S249.BREPS, 
+                           Y.LIMS = c(0.01,2e3), 
+                           Y.PPM = TRUE, 
+                           RETURN.ALL = TRUE)
+
+
+STEP.TAB <- OSC.ALL.STEP$sampleList[[1]]
+
+## Save Table
+write.table(x = STEP.TAB, file = paste0(TAB.DIR,"Table_S2_Steps.csv"), quote = FALSE, row.names = FALSE, sep = ",")
+
+
+##
+## BAR PLOT
+##
+
+BP.L <- lapply(names(OSC.S249.BREPS), function(s){
+  simpleMultBarPlot(GR = OSC.S249.BREPS[[s]], 
+                    RANGE.NAME = s) })
+
+## Arrange
+STEP.BPS <- ggarrange(plotlist = BP.L, nrow = 3)
+
+## Save Barplots
+#ggsave(filename = paste0(FIG.DIR,"F2B_NAT.pdf"), plot = STEP.BPS, width = 8, height = 12)
+```
+
+Fig. 2 Main - Violin
+```{r OSC: FHIP Violin}
+## DATA
+F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]]
+
+## FUNCTION
+SOURCE.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/r/"
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleSRViolin_V5.R")
+
+## EXTRACT AND PLOT
+FHIP.VIOL <- simpleSRViolin_V5(GRL = F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]], 
+                               Y.PPM = TRUE, 
+                               Y.LIMS = c(0.001, 1e3), 
+                               NH.TAG = NULL,
+                               SIZE.RANGE = c(24,29),
+                               SAMPLE.ORDER = c("FH-total","FH-common","FH-exclusive"), 
+                               ASPECT.RATIO = 1.5,
+                               SOURCE.DIR = SOURCE.DIR)
+
+FHIP.VIOL
+
+## SAVE A PLOT
+#ggsave(filename = paste0(FIG.DIR, "F2C_NAT_PPM.pdf"), plot = FHIP.VIOL, width = 10, height = 12)
+```
+
+Fig. 2 Main - Metagene
+```{r OSC: FHIP Metagene}
+## DATA
+F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]]
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMetageneV3.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMetageneRegularGGV4.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+##
+## GET METAGE TABLES
+
+FHIP.METAGENE.DT.L <- lapply(names(F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,29))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Dmelanogaster", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 5, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(FHIP.METAGENE.DT.L) <- names(F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]])
+
+##
+## PLOT
+##
+
+FHIP.MG.REGULAR.GG.L <- lapply(names(FHIP.METAGENE.DT.L), function(i){
+  MG <- FHIP.METAGENE.DT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   Y.LIMITS = c(0,85),
+                                   ASPECT.RATIO = 1.25) 
+  return(GGP)})
+
+## ARRANGE
+FHIP.MG.REG <- grid.arrange(grobs = FHIP.MG.REGULAR.GG.L, ncol = 3, nrow = 1)
+FHIP.MG.REG
+
+## SAVE A PLOY
+#ggsave(filename = paste0(FIG.DIR,"F2D_NAT.pdf"), plot = FHIP.MG.REG , width = 12, height = 10)
+```
+
+Fig. 2 Main - Size distribution
+```{r OSC: FHIP Size distribution}
+## DATA
+F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]]
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleSDfromGR.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+## SETTINGS
+#SIZE.RANGE <- seq(24,29)
+#NH.TAG = 1
+#YLIMS = c(0,40)
+#ASPECT.RATIO = 3
+
+## PLOT SETTINGS
+PLOT.COLORS <- c("grey50","plum","lightseagreen")
+names(PLOT.COLORS) <- names(F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]])
+
+## LOOP
+FH.SDP.L <- lapply(names(PLOT.COLORS), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,29))
+  
+  ## PLOT
+  SDP <- simpleSDfromGR(GR = GR, 
+                        USE.READS = TRUE,
+                        PLOT.FREQ = TRUE,
+                        SAMPLE.NAME = i, 
+                        BAR.LINE = NA, 
+                        BAR.FILL = PLOT.COLORS[[i]],
+                        YLIMS = c(0,40), 
+                        ASPECT.RATIO = 3, 
+                        RETURN.ALL = FALSE)
+  ## RETURN
+  return(SDP)})
+
+## Arrange
+FH.SD <- grid.arrange(grobs = FH.SDP.L, ncol = 3)
+FH.SD
+
+## SAVE
+#ggsave(filename = paste0(FIG.DIR, "F2C_insert.pdf"), plot = FH.SD, width = 12, height = 10)
+```
+
+Fig. 2 Main - Annotations
+```{r OSC: Annotations}
+## DATA
+F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]]
+F3.ALLDATA[["OSC.CLUSTERS"]]
+F3.ALLDATA[["OSC.FLAMENCO"]]
+
+## FUNCTIONS
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/rmskGTF2BED.R")
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/refgene_data.RData")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/annotateRankedBPV3.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+##
+## ANNOTATIONS
+##
+
+## CLUSTERS
+OSC.CLUSTERS <- F3.ALLDATA[["OSC.CLUSTERS"]]
+OSC.FLAMENCO <- F3.ALLDATA[["OSC.FLAMENCO"]]
+
+## TRANPSOSONS
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/rmskGTF2BED.R")
+RMSK.PATH <- "/Users/genzorp/Documents/DATA/Annotation/Dmelanogaster/dm6_rmsk_TE.gtf"
+RMSK.GR <- rmskGTF2BED(RMSK.GTF = RMSK.PATH)
+
+## EXONS AND INTRONS
+REFGENE.EXONS.GR
+REFGENE.INTRONS.GR
+
+## 
+## GET ANNOTATION TABLE
+## 
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/annotateGRankedV3.R")
+
+## LOOP
+ANN.TAB.L <- lapply(names(F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]]), function(s){
+  
+  message(paste0("Sample: ", s))
+  AGR <- F3.ALLDATA[["OSC.OVERLAPS"]][["FHPiwi"]][[s]]
+  ## By Sample
+  AR <- annotateGRankedV3(GR = AGR, 
+                          SAMPLE.NAME = s, 
+                          SIZE.RANGE = c(24,29),
+                          CATEGORY.NAMES = c("FLAM","CLUSTERS"),
+                          CATEGORY.1.GR = F3.ALLDATA[["OSC.FLAMENCO"]],
+                          CATEGORY.2.GR = F3.ALLDATA[["OSC.CLUSTERS"]], 
+                          SOURCE.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/r/")
+  return(AR) })
+
+## Arrange
+ANNBP <- annotateRankedBPV3(ANN.TAB.L = ANN.TAB.L)
+ANNBP
+
+## SAVE
+#ggsave(filename = paste0(FIG.DIR,"F2D.pdf"), plot = ANNBP, width = 6, height = 10)
+```
+
+##
+## SUPLEMENT
+##
+
+Fig. S2 Load Data
+```{r MOUSE: Load Data}
+## DATA
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/F2_MOUSEDATA.RData")
+```
+
+Fig. S2 Steps
+```{r MOUSE & FLY: Steps with Bar }
+F2.MOUSEDATA[["ORIGINAL.DATA"]][["MILI.PS.GRL"]]
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleStepsPlot.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+##
+## MILI WT AND KO
+##
+
+MILI.STEP.BAMS <- list("MILI_PS_1" = F2.MOUSEDATA[["ORIGINAL.DATA"]][["MILI.PS.GRL"]][["MILI_PS_1"]],
+                       "MILIKO_PS_1" = F2.MOUSEDATA[["ORIGINAL.DATA"]][["MILI.PS.KO.GRL"]][["MILI_PS_KO_1"]])
+
+## FILTER
+MILI.STEP.BAMS <- lapply(MILI.STEP.BAMS, function(s){
+  simpleGRFilter(GR = s, 
+                 SIZE.RANGE = c(24,50))})
+
+## PLOT
+MILI.GGS <- simpleStepsPlot(GRL = MILI.STEP.BAMS,
+                            Y.LIMS = c(0.01,2e3), 
+                            Y.PPM = TRUE)
+MILI.GGS
+
+## SAVE
+ggsave(filename = paste0(FIG.DIR,"SF2_STEP_MILI_PPM.pdf"), plot = MILI.GGS, height = 8, width = 6)
+
+##
+## MIWI WT AND KO
+##
+
+MIWI.STEP.BAMS <- list("MIWI_PS_1" = F2.MOUSEDATA[["ORIGINAL.DATA"]][["MIWI.PS.GRL"]][["MIWI_PS_1"]],
+                          "MIWIKO_PS_1" = F2.MOUSEDATA[["ORIGINAL.DATA"]][["MIWI.PS.KO.GRL"]][["MIWI_PS_KO_1"]])
+
+## FILTER
+MIWI.STEP.BAMS <- lapply(MIWI.STEP.BAMS, function(s){
+  simpleGRFilter(GR = s, SIZE.RANGE = c(24,50))})
+
+## PLOT
+MIWI.GGS <- simpleStepsPlot(GRL = MIWI.STEP.BAMS, 
+                            Y.LIMS = c(0.01,2e3), 
+                            Y.PPM = TRUE)
+MIWI.GGS
+
+## SAVE
+ggsave(filename = paste0(FIG.DIR,"SF2_STEP_MIWI_PPM.pdf"), plot = MIWI.GGS, height = 8, width = 6)
+
+##
+## FLY 
+##
+
+## LOAD DATA
+load("/Users/genzorp/Documents/GITHUB/piDiversity/sessions/Brennecke_loaded.RData")
+
+## GET FILES
+FLY.IPS <- c(Piwi = "SRR3715419", Aub = "SRR3715420", Ago3 = "SRR3715421")
+FLY.BAMS <- BRENNECKE.BAM.L[FLY.IPS]
+names(FLY.BAMS) <- names(FLY.IPS)
+
+## FILTER
+FLY.BAMS <- lapply(FLY.BAMS, function(s){
+  simpleGRFilter(GR = s, SIZE.RANGE = c(24,29))})
+
+## GET PLOT
+FLY.GGS <- simpleStepsPlot(GRL = FLY.BAMS, 
+                            Y.LIMS = c(0.01,2e3), 
+                            Y.PPM = TRUE)
+FLY.GGS
+
+## SAVE
+ggsave(filename = paste0(FIG.DIR,"SF2_STEP_FLY_PPM.pdf"), plot = FLY.GGS, height = 8, width = 6)
+
+##
+## STEPS
+##
+
+## Arrange
+SUPL.STEPS <- ggarrange(plotlist = list(MILI.GGS,MIWI.GGS, FLY.GGS), ncol = 2, nrow = 2)
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_ALL_STEPS_PPM.pdf"), plot = SUPL.STEPS, height = 14, width = 18)
+
+##
+##
+## BARPLOTS
+##
+##
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMultBarPlot.R")
+
+## MILI
+BP.MILI.L <- lapply(names(MILI.STEP.BAMS), function(s){
+  simpleMultBarPlot(GR = MILI.STEP.BAMS[[s]], 
+                    RANGE.NAME = s) })
+
+## Arrange
+STEP.MILI.BPS <- ggarrange(plotlist = BP.MILI.L, nrow = 3)
+STEP.MILI.BPS
+
+## Save Barplots
+ggsave(filename = paste0(FIG.DIR,"F2Ain_MILI_NAT.pdf"), plot = STEP.MILI.BPS, width = 8, height = 12)
+
+## MIWI
+BP.MIWI.L <- lapply(names(MIWI.STEP.BAMS), function(s){
+  simpleMultBarPlot(GR = MIWI.STEP.BAMS[[s]], 
+                    RANGE.NAME = s) })
+
+## Arrange
+STEP.MIWI.BPS <- ggarrange(plotlist = BP.MIWI.L, nrow = 3)
+STEP.MIWI.BPS
+
+## Save Barplots
+ggsave(filename = paste0(FIG.DIR,"F2Ain_MIWI_NAT.pdf"), plot = STEP.MIWI.BPS, width = 8, height = 12)
+
+##
+## FLY
+##
+
+BP.FLY.L <- lapply(names(FLY.BAMS), function(s){
+  simpleMultBarPlot(GR = FLY.BAMS[[s]], 
+                    RANGE.NAME = s) })
+
+## Arrange
+STEP.FLY.BPS <- ggarrange(plotlist = BP.FLY.L, nrow = 3)
+
+## Save Barplots
+ggsave(filename = paste0(FIG.DIR,"F2Ain_FLY_NAT.pdf"), plot = STEP.FLY.BPS, width = 8, height = 12)
+
+```
+
+Fig. S2 Violins
+```{r MOUSE: Violin}
+## DATA
+F2.MOUSEDATA[["MILI.WT"]]
+
+## FUNCTION
+SOURCE.DIR = "/Users/genzorp/Documents/GITHUB/piDiversity/r/"
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleSRViolin_V5.R")
+
+##
+## MILI 
+##
+
+MILI.WT.VIOL <- simpleSRViolin_V5(GRL = F2.MOUSEDATA[["MILI.WT"]], 
+                                  Y.PPM = TRUE,
+                                  Y.LIMS = c(0.01, 1e3),
+                                  NH.TAG = NULL,
+                                  SIZE.RANGE = c(24,50),
+                                  SAMPLE.ORDER = c("PSIMili-total","PSIMili-common","PSIMili-exclusive"), 
+                                  ASPECT.RATIO = 1.5, 
+                                  SOURCE.DIR = SOURCE.DIR)
+
+MILI.WT.VIOL
+ggsave(filename = paste0(FIG.DIR, "SF2_VIOL_MILI-WT_PPM.pdf"), plot = MILI.WT.VIOL, width = 10, height = 12)
+
+## PNLDC1 KO
+MILI.KO.VIOL <- simpleSRViolin_V5(GRL = F2.MOUSEDATA[["MILI.KO"]], 
+                                  Y.PPM = TRUE,
+                                  Y.LIMS = c(0.01, 1e3),
+                                  NH.TAG = NULL,
+                                  SIZE.RANGE = c(24,50),
+                                  SAMPLE.ORDER = c("PSIMiliKO-total","PSIMiliKO-common","PSIMiliKO-exclusive"), 
+                                  ASPECT.RATIO = 1.5, 
+                                  SOURCE.DIR = SOURCE.DIR)
+
+MILI.KO.VIOL
+ggsave(filename = paste0(FIG.DIR, "SF2_VIOL_MILI-KO_PPM.pdf"), plot = MILI.KO.VIOL, width = 10, height = 12)
+
+##
+## MIWI
+##
+
+MIWI.WT.VIOL <- simpleSRViolin_V5(GRL = F2.MOUSEDATA[["MIWI.WT"]], 
+                                  Y.PPM = TRUE,
+                                  Y.LIMS = c(0.01, 1e3),
+                                  NH.TAG = NULL,
+                                  SIZE.RANGE = c(24,50),
+                                  SAMPLE.ORDER = c("PSIMiwi-total","PSIMiwi-common","PSIMiwi-exclusive"), 
+                                  ASPECT.RATIO = 1.5, 
+                                  SOURCE.DIR = SOURCE.DIR)
+
+MIWI.WT.VIOL
+ggsave(filename = paste0(FIG.DIR, "SF2_VIOL_MIWI-WT_PPM.pdf"), plot = MIWI.WT.VIOL, width = 10, height = 12)
+
+## MILI KO
+
+## EXTRACT AND PLOT
+MIWI.KO.VIOL <- simpleSRViolin_V5(GRL = F2.MOUSEDATA[["MIWI.KO"]], 
+                                  Y.PPM = TRUE,
+                                  Y.LIMS = c(0.01, 1e3),
+                                  NH.TAG = NULL,
+                                  SIZE.RANGE = c(24,50),
+                                  SAMPLE.ORDER = c("PSIMiwiKO-total","PSIMiwiKO-common","PSIMiwiKO-exclusive"), 
+                                  ASPECT.RATIO = 1.5, 
+                                  SOURCE.DIR = SOURCE.DIR)
+
+MIWI.KO.VIOL
+ggsave(filename = paste0(FIG.DIR, "SF2_VIOL_MIWI-KO_PPM.pdf"), plot = MIWI.KO.VIOL, width = 10, height = 12)
+
+##
+## ARRANGE
+##
+
+## Arrange
+MOUSE.VIOLINS <- ggarrange(plotlist = list(MILI.WT.VIOL,MILI.KO.VIOL,MIWI.WT.VIOL,MIWI.KO.VIOL), ncol = 2, nrow = 2)
+MOUSE.VIOLINS
+
+## Save
+ggsave(filename = paste0(FIG.DIR, "SF2_MOUSE_VIOLINS_PPM.pdf"), plot = MOUSE.VIOLINS, width = 14, height = 18)
+
+```
+
+Fig. S2 Metagenes
+```{r MOUSE: Metagene}
+## DATA
+F2.MOUSEDATA[["MILI.WT"]]
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMetageneV3.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMetageneRegularGGV4.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+##
+## MILI WT
+##
+
+## GET METAGE TABLES
+MILI.WT.MGDT.L <- lapply(names(F2.MOUSEDATA[["MILI.WT"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MILI.WT"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 5, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MILI.WT.MGDT.L) <- names(F2.MOUSEDATA[["MILI.WT"]])
+
+## PLOT
+MILI.WT.REGGG.L <- lapply(names(MILI.WT.MGDT.L), function(i){
+  MG <- MILI.WT.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 27,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MILI.WT.MGGG <- grid.arrange(grobs = MILI.WT.REGGG.L, ncol = 3, nrow = 1)
+MILI.WT.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG_MILI-WT.pdf"), plot = MILI.WT.MGGG , width = 12, height = 10)
+
+##
+## MILI KO
+##
+
+## GET METAGE TABLES
+MILI.KO.MGDT.L <- lapply(names(F2.MOUSEDATA[["MILI.KO"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MILI.KO"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 5, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MILI.KO.MGDT.L) <- names(F2.MOUSEDATA[["MILI.KO"]])
+
+## PLOT
+MILI.KO.REGGG.L <- lapply(names(MILI.KO.MGDT.L), function(i){
+  MG <- MILI.KO.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 27,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MILI.KO.MGGG <- grid.arrange(grobs = MILI.KO.REGGG.L, ncol = 3, nrow = 1)
+MILI.KO.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG_MILI-KO.pdf"), plot = MILI.KO.MGGG , width = 12, height = 10)
+
+##
+## MIWI WT
+##
+
+## GET METAGE TABLES
+MIWI.WT.MGDT.L <- lapply(names(F2.MOUSEDATA[["MIWI.WT"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MIWI.WT"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 5, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MIWI.WT.MGDT.L) <- names(F2.MOUSEDATA[["MIWI.WT"]])
+
+## PLOT
+MIWI.WT.REGGG.L <- lapply(names(MIWI.WT.MGDT.L), function(i){
+  MG <- MIWI.WT.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 30,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MIWI.WT.MGGG <- grid.arrange(grobs = MIWI.WT.REGGG.L, ncol = 3, nrow = 1)
+MIWI.WT.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG_MIWI-WT.pdf"), plot = MIWI.WT.MGGG , width = 12, height = 10)
+
+##
+## MILI KO
+##
+
+## GET METAGE TABLES
+MIWI.KO.MGDT.L <- lapply(names(F2.MOUSEDATA[["MIWI.KO"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MIWI.KO"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 5, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MIWI.KO.MGDT.L) <- names(F2.MOUSEDATA[["MIWI.KO"]])
+
+## PLOT
+MIWI.KO.REGGG.L <- lapply(names(MIWI.KO.MGDT.L), function(i){
+  MG <- MIWI.KO.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 30,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MIWI.KO.MGGG <- grid.arrange(grobs = MIWI.KO.REGGG.L, ncol = 3, nrow = 1)
+MIWI.KO.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG_MIWI-KO.pdf"), plot = MIWI.KO.MGGG , width = 12, height = 10)
+```
+
+Fig. S2 Three Prime Metagenes
+```{r MOUSE: Metagene 3 prime}
+## DATA
+F2.MOUSEDATA[["MILI.WT"]]
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMetageneV3.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleMetageneRegularGGV4.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+##
+## MILI WT
+##
+
+## GET METAGE TABLES
+MILI.WT.MGDT.L <- lapply(names(F2.MOUSEDATA[["MILI.WT"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MILI.WT"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 3, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MILI.WT.MGDT.L) <- names(F2.MOUSEDATA[["MILI.WT"]])
+
+## PLOT
+MILI.WT.REGGG.L <- lapply(names(MILI.WT.MGDT.L), function(i){
+  MG <- MILI.WT.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 27,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MILI.WT.MGGG <- grid.arrange(grobs = MILI.WT.REGGG.L, ncol = 3, nrow = 1)
+MILI.WT.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG3_MILI-WT.pdf"), plot = MILI.WT.MGGG , width = 12, height = 10)
+
+##
+## MILI KO
+##
+
+## GET METAGE TABLES
+MILI.KO.MGDT.L <- lapply(names(F2.MOUSEDATA[["MILI.KO"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MILI.KO"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 3, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MILI.KO.MGDT.L) <- names(F2.MOUSEDATA[["MILI.KO"]])
+
+## PLOT
+MILI.KO.REGGG.L <- lapply(names(MILI.KO.MGDT.L), function(i){
+  MG <- MILI.KO.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 27,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MILI.KO.MGGG <- grid.arrange(grobs = MILI.KO.REGGG.L, ncol = 3, nrow = 1)
+MILI.KO.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG3_MILI-KO.pdf"), plot = MILI.KO.MGGG , width = 12, height = 10)
+
+##
+## MIWI WT
+##
+
+## GET METAGE TABLES
+MIWI.WT.MGDT.L <- lapply(names(F2.MOUSEDATA[["MIWI.WT"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MIWI.WT"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 3, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MIWI.WT.MGDT.L) <- names(F2.MOUSEDATA[["MIWI.WT"]])
+
+## PLOT
+MIWI.WT.REGGG.L <- lapply(names(MIWI.WT.MGDT.L), function(i){
+  MG <- MIWI.WT.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 30,
+                                   Y.LIMITS = c(0,100),
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MIWI.WT.MGGG <- grid.arrange(grobs = MIWI.WT.REGGG.L, ncol = 3, nrow = 1)
+MIWI.WT.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG3_MIWI-WT.pdf"), plot = MIWI.WT.MGGG , width = 12, height = 10)
+
+##
+## MILI KO
+##
+
+## GET METAGE TABLES
+MIWI.KO.MGDT.L <- lapply(names(F2.MOUSEDATA[["MIWI.KO"]]), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MIWI.KO"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## GET TABLES
+  MG <- simpleMetagene3(GR = GR, 
+                        RANGE.NAME = i,
+                        BSSPECIES = "Mmusculus", 
+                        USE.READS = TRUE, 
+                        ALIGN.END = 3, 
+                        EXPAND.BY = 50)
+  return(MG)})
+names(MIWI.KO.MGDT.L) <- names(F2.MOUSEDATA[["MIWI.KO"]])
+
+## PLOT
+MIWI.KO.REGGG.L <- lapply(names(MIWI.KO.MGDT.L), function(i){
+  MG <- MIWI.KO.MGDT.L[[i]]
+  GGP <- simpleMetageneRegularGGV4(METAGENE.DT = MG[["frequency"]],
+                                   SAMPLE.NAME = paste(i,"reads", sep = ";"),
+                                   PIRNA.SIZE = 30,  
+                                   Y.LIMITS = c(0,100), 
+                                   ASPECT.RATIO = 1.75) 
+  return(GGP)})
+
+## Arrange
+MIWI.KO.MGGG <- grid.arrange(grobs = MIWI.KO.REGGG.L, ncol = 3, nrow = 1)
+MIWI.KO.MGGG
+
+## Save
+ggsave(filename = paste0(FIG.DIR,"SF2_MG3_MIWI-KO.pdf"), plot = MIWI.KO.MGGG , width = 12, height = 10)
+
+```
+
+Fig. S2 Size Distribution
+```{r MOUSE: Size distribution}
+## DATA
+F2.MOUSEDATA[["MILI.WT"]]
+
+## FUNCTION
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleSDfromGR.R")
+source("/Users/genzorp/Documents/GITHUB/piDiversity/r/simpleGRFilter.R")
+
+##
+## MILI WT
+##
+
+## PLOT SETTINGS
+PLOT.COLORS <- c("grey50","plum","lightseagreen")
+names(PLOT.COLORS) <- names(F2.MOUSEDATA[["MILI.WT"]])
+
+## LOOP
+MILI.WT.SDP.L <- lapply(names(PLOT.COLORS), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MILI.WT"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## PLOT
+  SDP <- simpleSDfromGR(GR = GR, 
+                        USE.READS = TRUE,
+                        PLOT.FREQ = TRUE,
+                        SAMPLE.NAME = i, 
+                        BAR.LINE = NA, 
+                        BAR.FILL = PLOT.COLORS[[i]],
+                        YLIMS = c(0,35), 
+                        ASPECT.RATIO = 3, 
+                        RETURN.ALL = FALSE)
+  ## RETURN
+  return(SDP)})
+
+MILI.WT.SD <- grid.arrange(grobs = MILI.WT.SDP.L, ncol = 3)
+ggsave(filename = paste0(FIG.DIR, "SF2_SD_MILI_WT.pdf"), plot = MILI.WT.SD, width = 12, height = 10)
+
+##
+## MILI KO
+##
+
+## PLOT SETTINGS
+PLOT.COLORS <- c("grey50","plum","lightseagreen")
+names(PLOT.COLORS) <- names(F2.MOUSEDATA[["MILI.KO"]])
+
+## LOOP
+MILI.KO.SDP.L <- lapply(names(PLOT.COLORS), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MILI.KO"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## PLOT
+  SDP <- simpleSDfromGR(GR = GR, 
+                        USE.READS = TRUE,
+                        PLOT.FREQ = TRUE,
+                        SAMPLE.NAME = i, 
+                        BAR.LINE = NA, 
+                        BAR.FILL = PLOT.COLORS[[i]],
+                        YLIMS = c(0,35), 
+                        ASPECT.RATIO = 3, 
+                        RETURN.ALL = FALSE)
+  ## RETURN
+  return(SDP)})
+
+MILI.KO.SD <- grid.arrange(grobs = MILI.KO.SDP.L, ncol = 3)
+ggsave(filename = paste0(FIG.DIR, "SF2_SD_MILI_KO.pdf"), plot = MILI.KO.SD, width = 12, height = 10)
+
+##
+## MIWI WT
+##
+
+## PLOT SETTINGS
+PLOT.COLORS <- c("grey50","plum","lightseagreen")
+names(PLOT.COLORS) <- names(F2.MOUSEDATA[["MIWI.WT"]])
+
+## LOOP
+MIWI.WT.SDP.L <- lapply(names(PLOT.COLORS), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MIWI.WT"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## PLOT
+  SDP <- simpleSDfromGR(GR = GR, 
+                        USE.READS = TRUE,
+                        PLOT.FREQ = TRUE,
+                        SAMPLE.NAME = i, 
+                        BAR.LINE = NA, 
+                        BAR.FILL = PLOT.COLORS[[i]],
+                        YLIMS = c(0,35), 
+                        ASPECT.RATIO = 3, 
+                        RETURN.ALL = FALSE)
+  ## RETURN
+  return(SDP)})
+
+MIWI.WT.SD <- grid.arrange(grobs = MIWI.WT.SDP.L, ncol = 3)
+ggsave(filename = paste0(FIG.DIR, "SF2_SD_MIWI_WT.pdf"), plot = MIWI.WT.SD, width = 12, height = 10)
+
+##
+## MILI KO
+##
+
+## PLOT SETTINGS
+PLOT.COLORS <- c("grey50","plum","lightseagreen")
+names(PLOT.COLORS) <- names(F2.MOUSEDATA[["MIWI.KO"]])
+
+## LOOP
+MIWI.KO.SDP.L <- lapply(names(PLOT.COLORS), function(i){
+  
+  ## FILTER
+  message(paste0("SAMPLE: ",i))
+  GR <- simpleGRFilter(GR = F2.MOUSEDATA[["MIWI.KO"]][[i]],
+                       RANGE.NAME = i, 
+                       NH.TAG = 1, SIZE.RANGE = c(24,50))
+  
+  ## PLOT
+  SDP <- simpleSDfromGR(GR = GR, 
+                        USE.READS = TRUE,
+                        PLOT.FREQ = TRUE,
+                        SAMPLE.NAME = i, 
+                        BAR.LINE = NA, 
+                        BAR.FILL = PLOT.COLORS[[i]],
+                        YLIMS = c(0,35), 
+                        ASPECT.RATIO = 3, 
+                        RETURN.ALL = FALSE)
+  ## RETURN
+  return(SDP)})
+
+MIWI.KO.SD <- grid.arrange(grobs = MIWI.KO.SDP.L, ncol = 3)
+ggsave(filename = paste0(FIG.DIR, "SF2_SD_MIWI_KO.pdf"), plot = MIWI.KO.SD, width = 12, height = 10)
+
+
+
+
+```
+
+
